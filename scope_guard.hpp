@@ -4,137 +4,141 @@
 
 #include <functional>
 #include <type_traits>
+#include <utility>
 #include <experimental/ranges/concepts>
 
 namespace std::experimental {
+#if 0 // NYI
     template <class R, class D> class unique_resource;
 
     // special factory function
     template <class R, class D, class S = R>
     unique_resource<std::decay_t<R>, std::decay_t<D>>
     make_unique_resource_checked(R&& r, const S& invalid, D&& d)
-    noexcept(std::is_nothrow_constructible_v<std::decay_t<R>, R> &&
-        std::is_nothrow_constructible_v<std::decay_t<D>, D>);
+    noexcept(std::is_nothrow_constructible<std::decay_t<R>, R>::value &&
+        std::is_nothrow_constructible<std::decay_t<D>, D>::value);
 
     template <class R, class D>
     unique_resource<std::decay_t<R>, std::decay_t<D>>
     make_unique_resource(R&& r, D&& d)
-        noexcept(std::is_nothrow_constructible_v<std::decay_t<R>, R> &&
-            std::is_nothrow_constructible_v<std::decay_t<D>, D>);
+        noexcept(std::is_nothrow_constructible<std::decay_t<R>, R>::value &&
+            std::is_nothrow_constructible<std::decay_t<D>, D>::value);
 
     template <class R, class D>
     unique_resource<R&, std::decay_t<D>>
     make_unique_resource(std::reference_wrapper<R> r, D&& d)
-        noexcept(std::is_nothrow_constructible_v<std::decay_t<D>, D>);
+        noexcept(std::is_nothrow_constructible<std::decay_t<D>, D>::value);
+#endif // NYI
 
-    template <ranges::Destructible EF>
+    template <ranges::Destructible _EF>
     requires
-        (std::is_object_v<EF> ||
-            (std::is_lvalue_reference_v<EF> &&
-                (std::is_object_v<std::remove_reference_t<EF>> ||
-                std::is_function_v<std::remove_reference_t<EF>> ))) &&
-        ranges::Invocable<EF&>()
-    class basic_scope_exit {
+        (std::is_object<_EF>::value ||
+            (std::is_lvalue_reference<_EF>::value &&
+                (std::is_object<std::remove_reference_t<_EF>>::value ||
+                 std::is_function<std::remove_reference_t<_EF>>::value))) &&
+        ranges::Invocable<_EF&>()
+    class __basic_scope_exit {
     protected:
-        ~basic_scope_exit() {
-            if (execute_on_destruction_) {
-                exit_function_();
+        ~__basic_scope_exit() {
+            if (__execute_on_destruction) {
+                __exit_function();
             }
         }
     public:
-        template <class EFP>
-        requires ranges::Constructible<EF, EFP>()
-        constexpr explicit basic_scope_exit(EFP&& f)
-        noexcept(std::is_nothrow_constructible_v<EF, EFP>)
-        : exit_function_(std::forward<EFP>(f))
+        template <class _EFP>
+        requires ranges::Constructible<_EF, _EFP>()
+        constexpr explicit __basic_scope_exit(_EFP&& __fn)
+        noexcept(std::is_nothrow_constructible<_EF, _EFP>::value)
+        : __exit_function(std::forward<_EFP>(__fn))
         {}
-        basic_scope_exit(basic_scope_exit&& that)
+        __basic_scope_exit(__basic_scope_exit&& __that)
         requires
-            ranges::MoveConstructible<EF>() &&
-            std::is_nothrow_move_constructible_v<EF>
-        : exit_function_(std::move(that).exit_function_)
-        , execute_on_destruction_(std::exchange(that.execute_on_destruction_, false))
+            ranges::MoveConstructible<_EF>() &&
+            std::is_nothrow_move_constructible<_EF>::value
+        : __exit_function(std::move(__that).__exit_function)
+        , __execute_on_destruction(std::exchange(__that.__execute_on_destruction, false))
         {}
-        basic_scope_exit(basic_scope_exit&& that)
+        __basic_scope_exit(__basic_scope_exit&& __that)
         requires
-            ranges::CopyConstructible<EF>() &&
-            !std::is_nothrow_move_constructible_v<EF>
-        : exit_function_(that.exit_function_)
-        , execute_on_destruction_(std::exchange(that.execute_on_destruction_, false))
+            ranges::CopyConstructible<_EF>() &&
+            !std::is_nothrow_move_constructible<_EF>::value
+        : __exit_function(__that.__exit_function)
+        , __execute_on_destruction(std::exchange(__that.__execute_on_destruction, false))
         {}
-        basic_scope_exit& operator=(basic_scope_exit&&) = delete;
+        __basic_scope_exit& operator=(__basic_scope_exit&&) = delete;
         void release() noexcept {
-            execute_on_destruction_ = false;
+            __execute_on_destruction = false;
         }
     private:
-        EF exit_function_;
-        bool execute_on_destruction_{true};
+        _EF __exit_function;
+        bool __execute_on_destruction = true;
     };
 
-    template <class EF>
-    struct scope_exit : basic_scope_exit<EF> {
-        template <class EFP>
+    template <class _EF>
+    struct scope_exit : __basic_scope_exit<_EF> {
+        template <class _EFP>
         requires
-            ranges::Constructible<EF, EFP>() &&
-            std::is_nothrow_constructible_v<EF, EFP>
-        constexpr explicit scope_exit(EFP&& f)
-        noexcept(std::is_nothrow_constructible_v<EF, EFP>)
-        : basic_scope_exit<EF>(std::forward<EFP>(f))
+            ranges::Constructible<_EF, _EFP>() &&
+            std::is_nothrow_constructible<_EF, _EFP>::value
+        constexpr explicit scope_exit(_EFP&& __fn)
+        noexcept(std::is_nothrow_constructible<_EF, _EFP>::value)
+        : __basic_scope_exit<_EF>(std::forward<_EFP>(__fn))
         {}
-        template <class EFP>
-        requires ranges::Constructible<EF, const EFP&>()
-        constexpr explicit scope_exit(const EFP& f)
-        try : basic_scope_exit<EF>(f)
+        template <class _EFP>
+        requires ranges::Constructible<_EF, const _EFP&>()
+        constexpr explicit scope_exit(const _EFP& __fn)
+        try : __basic_scope_exit<_EF>(__fn)
         {}
         catch(...) {
-            f();
+            __fn();
             throw;
         }
     };
 
-    class exception_count {
+    class __exception_count {
     protected:
-        exception_count() = default;
-        exception_count(const exception_count&) noexcept {}
-        exception_count(exception_count&&) noexcept {}
-        exception_count& operator=(const exception_count&) noexcept { return *this; }
-        exception_count& operator=(exception_count&&) noexcept { return *this; }
-        const int uncaught_exceptions_{std::uncaught_exceptions()};
+        __exception_count() = default;
+        __exception_count(const __exception_count&) noexcept {}
+        __exception_count(__exception_count&&) noexcept {}
+        __exception_count& operator=(const __exception_count&) noexcept { return *this; }
+        __exception_count& operator=(__exception_count&&) noexcept { return *this; }
+
+        const int __uncaught_exceptions = std::uncaught_exceptions();
     };
 
-    template <class EF>
-    struct scope_success : basic_scope_exit<EF>, exception_count {
-        using basic_scope_exit<EF>::basic_scope_exit;
+    template <class _EF>
+    struct scope_success : __basic_scope_exit<_EF>, __exception_count {
+        using __basic_scope_exit<_EF>::__basic_scope_exit;
         ~scope_success() {
-            if (std::uncaught_exceptions() > this->uncaught_exceptions_) {
+            if (std::uncaught_exceptions() > this->__uncaught_exceptions) {
                 this->release();
             }
         }
     };
 
-    template <class EF>
-    struct scope_fail : scope_exit<EF>, exception_count {
-        using scope_exit<EF>::scope_exit;
-        ~scope_fail() noexcept(noexcept(std::declval<EF&>())) {
-            if (std::uncaught_exceptions() <= this->uncaught_exceptions_) {
+    template <class _EF>
+    struct scope_fail : scope_exit<_EF>, __exception_count {
+        using scope_exit<_EF>::scope_exit;
+        ~scope_fail() noexcept(noexcept(std::declval<_EF&>())) { // FIXME: It's too late to apply noexcept(false) here.
+            if (std::uncaught_exceptions() <= this->__uncaught_exceptions) {
                 this->release();
             }
         }
     };
 
-    template <class EF>
-    constexpr scope_exit<std::decay_t<EF>> make_scope_exit(EF&& exit_function) {
-        return scope_exit<std::decay_t<EF>>(std::forward<EF>(exit_function));
+    template <class _EF>
+    constexpr scope_exit<std::decay_t<_EF>> make_scope_exit(_EF&& __exit_function) {
+        return scope_exit<std::decay_t<_EF>>(std::forward<_EF>(__exit_function));
     }
 
-    template <class EF>
-    constexpr scope_fail<std::decay_t<EF>> make_scope_fail(EF&& exit_function) {
-        return scope_fail<std::decay_t<EF>>(std::forward<EF>(exit_function));
+    template <class _EF>
+    constexpr scope_fail<std::decay_t<_EF>> make_scope_fail(_EF&& __exit_function) {
+        return scope_fail<std::decay_t<_EF>>(std::forward<_EF>(__exit_function));
     }
 
-    template <class EF>
-    constexpr scope_success<std::decay_t<EF>> make_scope_success(EF&& exit_function) {
-        return scope_success<std::decay_t<EF>>(std::forward<EF>(exit_function));
+    template <class _EF>
+    constexpr scope_success<std::decay_t<_EF>> make_scope_success(_EF&& __exit_function) {
+        return scope_success<std::decay_t<_EF>>(std::forward<_EF>(__exit_function));
     }
 } // namespace std::experimental
 

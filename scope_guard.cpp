@@ -18,7 +18,7 @@ int main() {
             F(F&&) noexcept { std::cout << __PRETTY_FUNCTION__ << '\n'; }
             void operator()() const { std::cout << __PRETTY_FUNCTION__ << '\n'; --count; }
         };
-        static_assert(std::is_nothrow_move_constructible_v<F>);
+        static_assert(std::is_nothrow_move_constructible<F>::value);
         count = 3;
         scope_exit<F> guard1(F{});
         F f{};
@@ -35,7 +35,7 @@ int main() {
             F(const F&) { std::cout << __PRETTY_FUNCTION__ << '\n'; }
             void operator()() const { std::cout << __PRETTY_FUNCTION__ << '\n'; --count; }
         };
-        static_assert(!std::is_nothrow_move_constructible_v<F>);
+        static_assert(!std::is_nothrow_move_constructible<F>::value);
         count = 5;
         scope_exit<F> guard1(F{});
         F f{};
@@ -53,7 +53,7 @@ int main() {
             F(const F&) { std::cout << __PRETTY_FUNCTION__ << ": throw...\n"; throw 42; }
             void operator()() const { std::cout << __PRETTY_FUNCTION__ << '\n'; --count; }
         };
-        static_assert(!std::is_nothrow_move_constructible_v<F>);
+        static_assert(!std::is_nothrow_move_constructible<F>::value);
         count = 5;
         try { scope_exit<F> _(F{}); std::abort(); }
         catch(int) { std::cout << "...catch\n"; }
@@ -76,7 +76,7 @@ int main() {
             F(F&&) noexcept { std::cout << __PRETTY_FUNCTION__ << '\n'; }
             void operator()() const { std::cout << __PRETTY_FUNCTION__ << '\n'; --count; }
         };
-        static_assert(std::is_nothrow_move_constructible_v<F>);
+        static_assert(std::is_nothrow_move_constructible<F>::value);
         count = 3;
         scope_exit<F> guard1(F{});
         F f{};
@@ -93,7 +93,7 @@ int main() {
             F(F&&) noexcept; // undefined
             void operator()() const { std::cout << __PRETTY_FUNCTION__ << '\n'; --count; }
         };
-        static_assert(std::is_nothrow_move_constructible_v<F>);
+        static_assert(std::is_nothrow_move_constructible<F>::value);
         count = 3;
         F f{};
         scope_exit<F&> guard1(f);
