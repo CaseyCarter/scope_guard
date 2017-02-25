@@ -2,6 +2,9 @@
 #include <iostream>
 #include "scope_guard.hpp"
 
+using std::experimental::scope_exit;
+using std::experimental::make_scope_exit;
+
 namespace {
     int count = 0;
 }
