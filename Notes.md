@@ -44,4 +44,4 @@
 
 * [scope.scope_guard]/18 - the *Remarks* element for `~scope_success` - is unnecessary. Presumably this paragraph is a hold-over from an early revision of the paper that did not adjust [res.on.exception.handling] to allow a standard library class to have a throwing destructor.
 
-* The specification of the `scope_guard` class templates is unnecessarily complicated by allowing `EF` to be a function or function object reference. It would be simplified by requiring `EF` to always be an *Lvalue-Callable* (N4640 [func.wrap.func]/2) and `Destructible` object type.
+* The specification of the `scope_guard` class templates is unnecessarily complicated by allowing `EF` to be a function or function object reference. It would be simplified by requiring `EF` to always be an *Lvalue-Callable* (N4640 [func.wrap.func]/2) and `Destructible` object type, and wrapping references in std::reference_wrapper if desired.

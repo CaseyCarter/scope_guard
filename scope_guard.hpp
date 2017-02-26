@@ -160,7 +160,7 @@ STL2_OPEN_NAMESPACE { namespace ext {
     class scope_fail : scope_exit<EF, noexcept(noexcept(std::declval<EF&>()))>
     {
     public:
-        ~scope_fail() noexcept(noexcept(std::declval<EF&>())) {
+        ~scope_fail() {
             if (!count.more_exceptions()) {
                 this->release();
             }
