@@ -38,10 +38,9 @@
      >
      > *Throws:* Any exception thrown by the initialization of `exit_function`.
 
-
 * The `scope_success` perfect-forwarding constructor template need not complicate its Effects element as do the other constructor templates, since it never calls `f` and does not care if the initialization throws an exception. I recommend replacing the paragraph with:
   > 11 *Effects:* Initializes `exit_function` with `std::forward<EFP>(f)`. [ *Note:* If copying fails, `f` is not called. — *end note* ]
 
 * [scope.scope_guard]/18 - the *Remarks* element for `~scope_success` - is unnecessary. Presumably this paragraph is a hold-over from an early revision of the paper that did not adjust [res.on.exception.handling] to allow a standard library class to have a throwing destructor.
 
-* The specification of the `scope_guard` class templates is unnecessarily complicated by allowing `EF` to be a function or function object reference. It would be simplified by requiring `EF` to always be an *Lvalue-Callable* (N4640 [func.wrap.func]/2) and `Destructible` object type, and wrapping references in std::reference_wrapper if desired.
+* The specification of the `scope_guard` class templates is unnecessarily complicated by allowing `EF` to be a function reference or function object reference. It would be simplified by requiring `EF` to always be an *Lvalue-Callable* (N4640 [func.wrap.func]/2) and `Destructible` object type. Users can wrap references in std::reference_wrapper if desired. Does the current behavior support a specific use case?

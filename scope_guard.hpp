@@ -12,7 +12,34 @@
 
 STL2_OPEN_NAMESPACE { namespace ext {
 #if 0 // NYI
-    template <class R, class D> class unique_resource;
+    template <class R,class D>
+    class unique_resource {
+    public:
+        template <class RR, class DD>
+        explicit unique_resource(RR&& r, DD&& d)
+        noexcept(std::is_nothrow_constructible<R, RR>::value &&
+            std::is_nothrow_constructible<D, DD>::value);
+        unique_resource(unique_resource&& that)
+        noexcept(std::is_nothrow_move_constructible<R>::value &&
+            std::is_nothrow_move_constructible<D>::value);
+        unique_resource(const unique_resource&) = delete;
+        ~unique_resource();
+        unique_resource& operator=(unique_resource&& that);
+        unique_resource& operator=(const unique_resource&) = delete;
+        void swap(unique_resource& that);
+        void reset();
+        template <class RR>
+        void reset(RR&& r);
+        void release() noexcept;
+        const R& get() const noexcept;
+        R operator->() const noexcept;
+        see_below operator*() const noexcept;
+        const D& get_deleter() const noexcept;
+    private:
+        R resource;
+        D deleter;
+        bool execute_on_destruction = true;
+    };
 
     // special factory function
     template <class R, class D, class S = R>
